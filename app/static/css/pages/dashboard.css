@@ -1,0 +1,35 @@
+.document-review-form,
+.document-create-form,
+.expense-form,
+.repayment-form,
+.document-upload-form {
+  display: grid;
+}
+
+.workspace-dashboard .workspace-main {
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.table-action {
+  margin-bottom: 6px;
+}
+
+.page-header,
+.workspace,
+.summary-strip,
+.topnav a,
+button {
+  animation: rise-in 220ms ease-out;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

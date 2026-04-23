@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}DLA · {{ app_name }}{% endblock %}
+
+{% block content %}
+  <main class="app-shell page-shell">
+    <header class="page-header">
+      <div class="page-intro">
+        <div class="eyebrow">Director's loan account</div>
+        <h1>DLA</h1>
+        <p>Record repayments and inspect the running balance the company owes back to the director.</p>
+      </div>
+      <dl class="summary-strip">
+        <div class="summary-item summary-item-primary">
+          <dt>Company owes director</dt>
+          <dd class="money">£{{ '%.2f'|format(summary.balance_due_to_director) }}</dd>
+        </div>
+        <div class="summary-item">
+          <dt>Total funded</dt>
+          <dd class="money">£{{ '%.2f'|format(summary.total_loaned) }}</dd>
+        </div>
+        <div class="summary-item">
+          <dt>Total repaid</dt>
+          <dd class="money">£{{ '%.2f'|format(summary.total_repaid) }}</dd>
+        </div>
+      </dl>
+    </header>
+
+    <section class="workspace workspace-split">
+      <section class="workspace-main">
+        <section class="filterbar">
+          <form action="/dla" method="get" class="filter-form filter-form-short">
+            <label>Search<input type="text" name="search_text" value="{{ filters.search_text }}" placeholder="reference or notes"></label>
+            <label>Start date<input type="date" name="start_date" value="{{ filters.start_date }}"></label>
+            <label>End date<input type="date" name="end_date" value="{{ filters.end_date }}"></label>
+            <button type="submit">Apply</button>
+          </form>
+        </section>
+
+        <section class="register-panel">
+          <div class="panel-header">
+            <div><h3>Director's Loan Ledger</h3><p>Running balance of what the company owes back to the director.</p></div>
+            <div class="table-tools"><a href="/exports/director-loan.csv">DLA CSV</a></div>
+          </div>
+          <div class="ledger-table">
+            <table>
+              <thead>
+                <tr><th>Date</th><th>Direction</th><th>Amount</th><th>Running balance</th><th>Reference</th><th>Notes</th></tr>
+              </thead>
+              <tbody>
+                {% for row in loan_rows %}
+                  <tr>
+                    <td>{{ row.entry.entry_date.isoformat() }}</td>
+                    <td>{{ row.entry.direction }}</td>
+                    <td class="money">£{{ '%.2f'|format(row.entry.amount_gbp) }}</td>
+                    <td class="money {% if row.running_balance < 0 %}money-negative{% endif %}">£{{ '%.2f'|format(row.running_balance) }}</td>
+                    <td class="cell-wrap">{{ row.entry.reference }}</td>
+                    <td class="cell-wrap">{{ row.entry.notes or '' }}</td>
+                  </tr>
+                {% else %}
+                  <tr><td colspan="6" class="empty">No DLA activity recorded yet.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <aside class="workspace-side">
+        <section class="inspector-section">
+          <div class="inspector-heading">
+            <h2>Repayment to director</h2>
+            <p>Record money returned by the company. This reduces the DLA balance instead of creating a new expense.</p>
+          </div>
+          <form action="/repayments" method="post" class="repayment-form">
+            <input type="hidden" name="redirect_to" value="/dla">
+            <label>Date<input type="date" name="entry_date" required></label>
+            <label>Amount GBP<input type="number" step="0.01" min="0.01" name="amount_gbp" required></label>
+            <label>Reference<input type="text" name="reference" placeholder="Bank transfer to director" required></label>
+            <label>Notes<textarea name="notes" placeholder="Optional repayment note"></textarea></label>
+            <div class="button-row"><button class="secondary" type="submit">Save repayment</button></div>
+          </form>
+        </section>
+
+        <section class="inspector-section">
+          <div class="inspector-heading">
+            <h2>Ledger rules</h2>
+            <p>Use the DLA ledger only for money moving between the director and the company.</p>
+          </div>
+          <ul class="bullet-list">
+            <li>Personal payment for a company cost creates a <strong>loan to company</strong> entry.</li>
+            <li>Money paid back from the company creates a <strong>repayment to director</strong> entry.</li>
+            <li>The repayment itself is not another business expense.</li>
+          </ul>
+        </section>
+      </aside>
+    </section>
+  </main>
+{% endblock %}

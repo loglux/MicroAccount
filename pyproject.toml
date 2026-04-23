@@ -1,0 +1,31 @@
+[project]
+name = "loglux-accounting"
+version = "0.1.0"
+description = "UK-first lightweight accounting tool for director-funded expenses and director loan tracking"
+requires-python = ">=3.14"
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra"
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+exclude = [
+  ".git",
+  ".venv",
+  "data",
+  "storage",
+  "exports",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["B008"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"

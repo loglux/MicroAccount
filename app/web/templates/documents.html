@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Documents · {{ app_name }}{% endblock %}
+
+{% block content %}
+  <main class="app-shell page-shell">
+    <header class="page-header">
+      <div class="page-intro">
+        <div class="eyebrow">Document workflow</div>
+        <h1>Documents</h1>
+        <p>Review one uploaded file at a time, correct the extracted fields, then either create an expense, hold it, or delete it.</p>
+      </div>
+      <dl class="summary-strip">
+        <div class="summary-item">
+          <dt>Holding area</dt>
+          <dd>{{ incoming_documents|length }}</dd>
+        </div>
+        <div class="summary-item">
+          <dt>Current mode</dt>
+          <dd>{% if selected_temp_document %}Temporary{% elif selected_document %}Held{% else %}Ready{% endif %}</dd>
+        </div>
+        <div class="summary-item summary-item-primary">
+          <dt>Next action</dt>
+          <dd>{% if selected_temp_document or selected_document %}Review{% else %}Upload{% endif %}</dd>
+        </div>
+      </dl>
+    </header>
+
+    <section class="workspace workspace-split">
+      <section class="workspace-main">
+        <section class="register-panel">
+          <div class="panel-header">
+            <div><h3>Holding area</h3><p>Only documents you explicitly saved for later review or import.</p></div>
+          </div>
+          <div class="ledger-table">
+            <table>
+              <thead><tr><th>File</th><th>Type</th><th>Supplier</th><th>Amount</th><th>Actions</th></tr></thead>
+              <tbody>
+                {% for document in incoming_documents %}
+                  <tr>
+                    <td class="cell-wrap">{{ document.original_filename }}</td>
+                    <td>{{ document.document_type or '' }}</td>
+                    <td>{{ document.supplier_guess or '' }}</td>
+                    <td>{{ document.total_amount_guess or '' }}</td>
+                    <td><a href="/documents?review_document_id={{ document.id }}">Review</a></td>
+                  </tr>
+                {% else %}
+                  <tr><td colspan="5" class="empty">No held documents yet.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <aside class="workspace-side">
+        <section class="inspector-section">
+          <div class="inspector-heading">
+            <h2>Upload for review</h2>
+            <p>Upload a single invoice or receipt. It stays temporary until you confirm the import.</p>
+          </div>
+          <form action="/documents/upload" method="post" enctype="multipart/form-data" class="document-upload-form">
+            <label>
+              PDF invoice or receipt
+              <input type="file" name="documents" required>
+            </label>
+            <div class="button-row">
+              <button type="submit">Upload for review</button>
+            </div>
+          </form>
+        </section>
+
+        {% if selected_temp_document %}
+          <section class="inspector-section">
+            <div class="inspector-heading">
+              <h2>Temporary review</h2>
+              <p>This file is still temporary. Review it, import it, move it to holding, or delete it entirely.</p>
+            </div>
+            <div class="review-grid">
+              <div class="review-row"><div class="review-key">File</div><div>{{ selected_temp_document.original_filename }}</div></div>
+              <div class="review-row"><div class="review-key">Type</div><div>{{ selected_temp_document.document_type or '' }}</div></div>
+              <div class="review-row"><div class="review-key">Supplier</div><div>{{ selected_temp_document.supplier_guess or '' }}</div></div>
+              <div class="review-row"><div class="review-key">Reference</div><div>{{ selected_temp_document.reference_number_guess or '' }}</div></div>
+              <div class="review-row"><div class="review-key">Date</div><div>{{ selected_temp_document.document_date_guess or '' }}</div></div>
+              <div class="review-row"><div class="review-key">Amount</div><div>{{ selected_temp_document.total_amount_guess or '' }} {{ selected_temp_document.currency_guess or '' }}</div></div>
+              <div class="review-row"><div class="review-key">Text preview</div><div class="cell-wrap">{{ selected_temp_document_text_preview or '' }}</div></div>
+            </div>
+            <form action="/documents/temp/{{ selected_temp_document.id }}/review" method="post" class="document-review-form" data-document-review-form>
+              <label>Document type<input type="text" name="document_type" value="{{ selected_temp_document.document_type or '' }}"></label>
+              <label>Supplier<input type="text" name="supplier_guess" value="{{ selected_temp_document.supplier_guess or '' }}"></label>
+              <label>Reference number<input type="text" name="reference_number_guess" value="{{ selected_temp_document.reference_number_guess or '' }}"></label>
+              <div class="cols-2">
+                <label>Document date<input type="text" name="document_date_guess" value="{{ selected_temp_document.document_date_guess or '' }}"></label>
+                <label>Amount<input type="text" name="total_amount_guess" value="{{ selected_temp_document.total_amount_guess or '' }}"></label>
+              </div>
+              <label>Currency<input type="text" name="currency_guess" value="{{ selected_temp_document.currency_guess or '' }}"></label>
+              <label>Parser notes<textarea name="parser_notes">{{ selected_temp_document.parser_notes or '' }}</textarea></label>
+              <div class="button-row"><button class="secondary" type="submit">Save review changes</button></div>
+            </form>
+            <form action="/documents/temp/{{ selected_temp_document.id }}/create-expense" method="post" class="document-create-form">
+              <label>Category
+                <select name="category_code" required>
+                  <option value="">Select category</option>
+                  {% for category in categories %}
+                    <option value="{{ category }}">{{ category }}{% if account_mappings.get(category) %} · {{ account_mappings.get(category) }}{% endif %}</option>
+                  {% endfor %}
+                </select>
+              </label>
+              <div class="cols-2">
+                <label>Expense date<input type="date" name="expense_date" value="{{ selected_temp_document_form_date }}"></label>
+                <label>Amount GBP<input type="number" step="0.01" min="0.01" name="amount_gbp" value="{{ (selected_temp_document.total_amount_guess or '').replace('£', '') }}"></label>
+              </div>
+              <label>Supplier<input type="text" name="supplier_name" value="{{ selected_temp_document.supplier_guess or '' }}"></label>
+              <label>Description<input type="text" name="description" value="{{ selected_temp_document_description }}"></label>
+              <label>Notes<textarea name="notes">Created from uploaded document.</textarea></label>
+              <div class="flag-panel">
+                <div class="flag-panel-title">UK review</div>
+                <div class="cols-2">
+                  <label class="checkbox"><input type="checkbox" name="is_pre_trading" value="true"><span>Pre-trading</span></label>
+                  <label class="checkbox"><input type="checkbox" name="incurred_before_incorporation" value="true"><span>Before incorporation</span></label>
+                </div>
+                <div class="cols-2">
+                  <label>Cost treatment<select name="cost_treatment"><option value="revenue">Revenue</option><option value="formation_or_capital">Formation or capital</option></select></label>
+                  <label>Use type<select name="use_type"><option value="business_only">Business only</option><option value="mixed_use">Mixed use</option></select></label>
+                </div>
+                <label>Business use %<input type="number" step="0.01" min="0" max="100" name="business_use_percent" value="100.00"></label>
+              </div>
+              <div class="button-row"><button type="submit">Create expense from document</button><a class="button-link subtle" href="/documents">Cancel</a></div>
+            </form>
+            <form action="/documents/temp/{{ selected_temp_document.id }}/holding" method="post" class="document-discard-form"><div class="button-row"><button class="ghost" type="submit">Save to holding area</button></div></form>
+            <form action="/documents/temp/{{ selected_temp_document.id }}/discard" method="post" class="document-discard-form"><div class="button-row"><button class="ghost danger" type="submit">Delete temporary document</button></div></form>
+          </section>
+        {% endif %}
+
+        {% if selected_document %}
+          <section class="inspector-section">
+            <div class="inspector-heading">
+              <h2>Held document review</h2>
+              <p>This document already sits in the holding area and can be imported when you are ready.</p>
+            </div>
+            <div class="review-grid">
+              <div class="review-row"><div class="review-key">File</div><div>{{ selected_document.original_filename }}</div></div>
+              <div class="review-row"><div class="review-key">Type</div><div>{{ selected_document.document_type or '' }}</div></div>
+              <div class="review-row"><div class="review-key">Supplier</div><div>{{ selected_document.supplier_guess or '' }}</div></div>
+              <div class="review-row"><div class="review-key">Reference</div><div>{{ selected_document.reference_number_guess or '' }}</div></div>
+              <div class="review-row"><div class="review-key">Date</div><div>{{ selected_document.document_date_guess or '' }}</div></div>
+              <div class="review-row"><div class="review-key">Amount</div><div>{{ selected_document.total_amount_guess or '' }} {{ selected_document.currency_guess or '' }}</div></div>
+              <div class="review-row"><div class="review-key">Text preview</div><div class="cell-wrap">{{ selected_document_text_preview or '' }}</div></div>
+            </div>
+            <form action="/documents/{{ selected_document.id }}/review" method="post" class="document-review-form" data-document-review-form>
+              <label>Document type<input type="text" name="document_type" value="{{ selected_document.document_type or '' }}"></label>
+              <label>Supplier<input type="text" name="supplier_guess" value="{{ selected_document.supplier_guess or '' }}"></label>
+              <label>Reference number<input type="text" name="reference_number_guess" value="{{ selected_document.reference_number_guess or '' }}"></label>
+              <div class="cols-2">
+                <label>Document date<input type="text" name="document_date_guess" value="{{ selected_document.document_date_guess or '' }}"></label>
+                <label>Amount<input type="text" name="total_amount_guess" value="{{ selected_document.total_amount_guess or '' }}"></label>
+              </div>
+              <label>Currency<input type="text" name="currency_guess" value="{{ selected_document.currency_guess or '' }}"></label>
+              <label>Parser notes<textarea name="parser_notes">{{ selected_document.parser_notes or '' }}</textarea></label>
+              <div class="button-row"><button class="secondary" type="submit">Save review changes</button></div>
+            </form>
+            {% if not selected_document.linked_expense_id %}
+              <form action="/documents/{{ selected_document.id }}/create-expense" method="post" class="document-create-form">
+                <label>Category
+                  <select name="category_code" required>
+                    <option value="">Select category</option>
+                    {% for category in categories %}
+                      <option value="{{ category }}">{{ category }}{% if account_mappings.get(category) %} · {{ account_mappings.get(category) }}{% endif %}</option>
+                    {% endfor %}
+                  </select>
+                </label>
+                <div class="cols-2">
+                  <label>Expense date<input type="date" name="expense_date" value="{{ selected_document_form_date }}"></label>
+                  <label>Amount GBP<input type="number" step="0.01" min="0.01" name="amount_gbp" value="{{ (selected_document.total_amount_guess or '').replace('£', '') }}"></label>
+                </div>
+                <label>Supplier<input type="text" name="supplier_name" value="{{ selected_document.supplier_guess or '' }}"></label>
+                <label>Description<input type="text" name="description" value="{{ selected_document_description }}"></label>
+                <label>Notes<textarea name="notes">Created from holding area document.</textarea></label>
+                <div class="flag-panel">
+                  <div class="flag-panel-title">UK review</div>
+                  <div class="cols-2">
+                    <label class="checkbox"><input type="checkbox" name="is_pre_trading" value="true"><span>Pre-trading</span></label>
+                    <label class="checkbox"><input type="checkbox" name="incurred_before_incorporation" value="true"><span>Before incorporation</span></label>
+                  </div>
+                  <div class="cols-2">
+                    <label>Cost treatment<select name="cost_treatment"><option value="revenue">Revenue</option><option value="formation_or_capital">Formation or capital</option></select></label>
+                    <label>Use type<select name="use_type"><option value="business_only">Business only</option><option value="mixed_use">Mixed use</option></select></label>
+                  </div>
+                  <label>Business use %<input type="number" step="0.01" min="0" max="100" name="business_use_percent" value="100.00"></label>
+                </div>
+                <div class="button-row"><button type="submit">Create expense from holding</button><a class="button-link subtle" href="/documents">Cancel</a></div>
+              </form>
+              <form action="/documents/{{ selected_document.id }}/discard" method="post" class="document-discard-form"><div class="button-row"><button class="ghost danger" type="submit">Delete held document</button></div></form>
+            {% endif %}
+          </section>
+        {% endif %}
+      </aside>
+    </section>
+  </main>
+{% endblock %}

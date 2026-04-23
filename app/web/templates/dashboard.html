@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}{{ app_name }}{% endblock %}
+
+{% block content %}
+  <main class="app-shell page-shell">
+    <header class="page-header">
+      <div class="page-intro">
+        <div class="eyebrow">UK-first accounting workflow</div>
+        <h1>Operational snapshot</h1>
+        <p>Quick status across director-funded expenses, held documents, and the current director's loan balance.</p>
+      </div>
+      <dl class="summary-strip">
+        <div class="summary-item summary-item-primary">
+          <dt>Company owes director</dt>
+          <dd class="money">£{{ '%.2f'|format(summary.balance_due_to_director) }}</dd>
+        </div>
+        <div class="summary-item">
+          <dt>Personally funded</dt>
+          <dd class="money">£{{ '%.2f'|format(summary.total_loaned) }}</dd>
+        </div>
+        <div class="summary-item">
+          <dt>Repaid</dt>
+          <dd class="money">£{{ '%.2f'|format(summary.total_repaid) }}</dd>
+        </div>
+      </dl>
+    </header>
+
+    <section class="workspace workspace-dashboard">
+      <section class="workspace-main">
+        <section class="register-panel">
+          <div class="panel-header">
+            <div>
+              <h3>Recent expenses</h3>
+              <p>The latest business costs paid personally and now sitting in the register.</p>
+            </div>
+            <div class="table-tools">
+              <a href="/expenses">Open register</a>
+            </div>
+          </div>
+          <div class="ledger-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Supplier</th>
+                  <th>Description</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for expense in expenses[:8] %}
+                  <tr>
+                    <td>{{ expense.expense_date.isoformat() }}</td>
+                    <td>{{ expense.supplier_name or '' }}</td>
+                    <td class="cell-wrap">
+                      <strong>{{ expense.description }}</strong>
+                      <div class="status-tags">
+                        {% if expense.is_pre_trading %}<span class="tag">pre-trading</span>{% endif %}
+                        {% if expense.needs_review %}<span class="tag tag-alert">needs review</span>{% endif %}
+                      </div>
+                    </td>
+                    <td class="money">£{{ '%.2f'|format(expense.amount_gbp) }}</td>
+                  </tr>
+                {% else %}
+                  <tr>
+                    <td colspan="4" class="empty">No expenses recorded yet.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="register-panel">
+          <div class="panel-header">
+            <div>
+              <h3>Recent DLA movement</h3>
+              <p>Last entries affecting what the company owes back to the director.</p>
+            </div>
+            <div class="table-tools">
+              <a href="/dla">Open DLA</a>
+            </div>
+          </div>
+          <div class="ledger-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Direction</th>
+                  <th>Amount</th>
+                  <th>Running balance</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in loan_rows[:8] %}
+                  <tr>
+                    <td>{{ row.entry.entry_date.isoformat() }}</td>
+                    <td>{{ row.entry.direction }}</td>
+                    <td class="money">£{{ '%.2f'|format(row.entry.amount_gbp) }}</td>
+                    <td class="money">£{{ '%.2f'|format(row.running_balance) }}</td>
+                  </tr>
+                {% else %}
+                  <tr>
+                    <td colspan="4" class="empty">No DLA activity recorded yet.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <aside class="workspace-side">
+        <section class="inspector-section">
+          <div class="inspector-heading">
+            <h2>Documents waiting</h2>
+            <p>Only documents you intentionally kept for later review or import.</p>
+          </div>
+          <div class="ledger-table ledger-table-compact">
+            <table>
+              <thead>
+                <tr>
+                  <th>File</th>
+                  <th>Supplier</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for document in incoming_documents[:6] %}
+                  <tr>
+                    <td class="cell-wrap">{{ document.original_filename }}</td>
+                    <td>{{ document.supplier_guess or '' }}</td>
+                    <td>{{ document.total_amount_guess or '' }}</td>
+                  </tr>
+                {% else %}
+                  <tr>
+                    <td colspan="3" class="empty">No held documents.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="inspector-section">
+          <div class="inspector-heading">
+            <h2>Working notes</h2>
+            <p>Use the app in sequence: review the file, classify the expense, then record repayments on the DLA side.</p>
+          </div>
+          <ul class="bullet-list">
+            <li>Documents remain temporary until you explicitly commit them.</li>
+            <li>Personally funded company costs increase the DLA balance.</li>
+            <li>Repayments reduce the balance without creating another expense.</li>
+          </ul>
+        </section>
+      </aside>
+    </section>
+  </main>
+{% endblock %}

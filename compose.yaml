@@ -1,0 +1,20 @@
+services:
+  microaccount:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: microaccount
+    restart: unless-stopped
+    network_mode: bridge
+    ports:
+      - "${MICROACCOUNT_PORT:-8040}:8000"
+    environment:
+      LOGLUX_APP_NAME: "MicroAccount"
+      LOGLUX_DATA_DIR: /app/data
+      LOGLUX_STORAGE_DIR: /app/storage
+      LOGLUX_EXPORT_DIR: /app/exports
+      LOGLUX_DATABASE_URL: sqlite:////app/data/accounting.db
+    volumes:
+      - ./data:/app/data
+      - ./storage:/app/storage
+      - ./exports:/app/exports

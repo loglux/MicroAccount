@@ -1,0 +1,1 @@
+"""Loglux Accounting application package."""

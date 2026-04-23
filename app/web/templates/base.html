@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ app_name }}{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/tokens.css">
+  <link rel="stylesheet" href="/static/css/layout.css">
+  <link rel="stylesheet" href="/static/css/components.css">
+  <link rel="stylesheet" href="/static/css/pages/dashboard.css">
+  {% block head_extra %}{% endblock %}
+</head>
+<body class="page-{{ active_page or 'app' }}">
+  <div class="app-frame">
+    <aside class="app-nav">
+      <div class="brand-block">
+        <div class="brand-mark">M</div>
+        <div>
+          <div class="brand-name">{{ app_name }}</div>
+          <div class="brand-subtitle">Loglux Ltd</div>
+        </div>
+      </div>
+
+      <nav class="topnav" aria-label="Primary">
+        <a href="/" {% if active_page == "dashboard" %}class="is-active"{% endif %}>
+          <span>Overview</span>
+          <small>Today</small>
+        </a>
+        <a href="/expenses" {% if active_page == "expenses" %}class="is-active"{% endif %}>
+          <span>Expenses</span>
+          <small>Main register</small>
+        </a>
+        <a href="/documents" {% if active_page == "documents" %}class="is-active"{% endif %}>
+          <span>Documents</span>
+          <small>Review flow</small>
+        </a>
+        <a href="/dla" {% if active_page == "dla" %}class="is-active"{% endif %}>
+          <span>DLA</span>
+          <small>Loan ledger</small>
+        </a>
+      </nav>
+
+      <div class="nav-note">
+        <div class="nav-note-label">Working model</div>
+        <p>Business expense paid personally. Director loan to company. Repayment recorded separately.</p>
+      </div>
+    </aside>
+
+    <div class="app-main">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+  <script src="/static/js/document-review.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
