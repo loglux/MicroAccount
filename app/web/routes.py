@@ -39,9 +39,11 @@ from app.services.accounting import (
     list_incoming_documents,
     update_incoming_document_review,
 )
+from app.services.labels import humanize
 
 router = APIRouter(tags=["web"])
 templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent / "templates"))
+templates.env.filters["humanize"] = humanize
 
 
 def normalize_prefill_date(value: str | None) -> str:
@@ -189,31 +191,8 @@ def common_page_context(
 @router.get("/")
 def dashboard(
     request: Request,
-    start_date: date | None = None,
-    end_date: date | None = None,
-    category_code: str | None = None,
-    search_text: str | None = None,
-    prefill_expense_id: int | None = None,
-    review_document_id: int | None = None,
-    review_temp_id: str | None = None,
-    db: Session = Depends(get_db),
 ):
-    return templates.TemplateResponse(
-        request=request,
-        name="dashboard.html",
-        context=common_page_context(
-            request=request,
-            db=db,
-            active_page="dashboard",
-            start_date=start_date,
-            end_date=end_date,
-            category_code=category_code,
-            search_text=search_text,
-            prefill_expense_id=prefill_expense_id,
-            review_document_id=review_document_id,
-            review_temp_id=review_temp_id,
-        ),
-    )
+    return RedirectResponse(url="/expenses", status_code=303)
 
 
 @router.get("/expenses")
@@ -344,15 +323,12 @@ async def create_repayment_form(
 
 @router.post("/documents/upload")
 async def upload_documents_form(
-    documents: list[UploadFile] = File(default=[]),
+    documents: UploadFile = File(...),
 ):
-    for upload in documents:
-        session = create_temp_document_session(upload)
-        if session is not None:
-            return RedirectResponse(url=f"/documents?review_temp_id={session.id}", status_code=303)
-    if not documents:
+    session = create_temp_document_session(documents)
+    if session is None:
         return RedirectResponse(url="/documents", status_code=303)
-    return RedirectResponse(url="/documents", status_code=303)
+    return RedirectResponse(url=f"/documents?review_temp_id={session.id}", status_code=303)
 
 
 @router.post("/documents/temp/{session_id}/review")

@@ -1,21 +1,23 @@
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
-html {
-  background: var(--bg);
+html,
+body {
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  margin: 0;
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, rgba(15, 118, 96, 0.08), transparent 24rem),
-    linear-gradient(180deg, #edf1ee 0%, var(--bg) 45%, #e8edeb 100%);
+  background: var(--bg);
   color: var(--text);
-  font-family: "IBM Plex Sans", "Aptos", "Segoe UI", sans-serif;
+  font-family: var(--font-sans);
   font-size: 14px;
   line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
 main,
@@ -26,152 +28,140 @@ aside {
 
 .app-frame {
   display: grid;
-  grid-template-columns: 248px minmax(0, 1fr);
+  grid-template-columns: 220px minmax(0, 1fr);
   min-height: 100vh;
 }
 
 .app-nav {
   position: sticky;
   top: 0;
+  align-self: start;
   min-height: 100vh;
-  padding: 22px 18px 24px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0)),
-    var(--nav);
-  color: #f3f6f4;
+  padding: 16px 12px;
+  background: var(--nav);
+  color: #dde3df;
   display: grid;
   grid-template-rows: min-content min-content 1fr;
-  gap: 24px;
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 18px;
+  border-right: 1px solid var(--line);
 }
 
 .app-main {
   min-width: 0;
+  background: var(--bg);
 }
 
 .brand-block {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .brand-mark {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg, var(--accent), #3ca58a);
-  color: #f9fbfa;
-  font-family: "Iowan Old Style", "Palatino Linotype", serif;
-  font-size: 22px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
   font-weight: 700;
 }
 
 .brand-name {
-  font-family: "Iowan Old Style", "Palatino Linotype", serif;
-  font-size: 24px;
-  line-height: 1;
-  letter-spacing: -0.03em;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #ffffff;
 }
 
 .brand-subtitle {
-  margin-top: 4px;
-  color: rgba(243, 246, 244, 0.64);
+  margin-top: 1px;
+  color: rgba(221, 227, 223, 0.62);
   font-size: 12px;
 }
 
 .nav-note {
   align-self: end;
-  padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .nav-note-label {
-  margin-bottom: 8px;
-  color: rgba(243, 246, 244, 0.58);
+  margin-bottom: 4px;
+  color: rgba(221, 227, 223, 0.55);
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
 .nav-note p {
   margin: 0;
-  color: rgba(243, 246, 244, 0.8);
+  color: rgba(221, 227, 223, 0.78);
   font-size: 13px;
 }
 
 .app-shell {
-  width: min(1680px, calc(100% - 40px));
-  margin: 20px auto;
+  width: 100%;
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: 14px 18px 24px;
 }
 
 .page-shell {
   display: grid;
-  gap: 20px;
-}
-
-.page-header,
-.workspace {
-  border: 1px solid var(--line);
-  background: rgba(251, 251, 249, 0.88);
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(6px);
-  border-radius: var(--radius);
+  gap: 12px;
 }
 
 .page-header {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 540px);
-  gap: 32px;
-  align-items: start;
-  padding: 28px 30px 24px;
-  background:
-    linear-gradient(140deg, rgba(15, 118, 96, 0.08), rgba(15, 118, 96, 0) 50%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0));
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 20px;
+  align-items: center;
+  padding: 8px 2px 12px;
+  border-bottom: 1px solid var(--line);
 }
 
 .page-intro {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 2px;
 }
 
 .page-intro h1 {
   margin: 0;
   color: var(--ink);
-  font-family: "Iowan Old Style", "Palatino Linotype", serif;
-  font-size: clamp(2.2rem, 5vw, 4.2rem);
-  line-height: 0.94;
-  font-weight: 700;
-  letter-spacing: -0.045em;
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.2;
 }
 
 .page-intro p {
   margin: 0;
-  max-width: 44rem;
+  max-width: 60rem;
   color: var(--muted);
-  font-size: 15px;
+  font-size: 13px;
 }
 
 .workspace {
   display: grid;
   gap: 0;
-  overflow: hidden;
-  min-height: calc(100vh - 220px);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
 }
 
 .workspace-split {
-  grid-template-columns: minmax(0, 1fr) 380px;
-}
-
-.workspace-dashboard {
-  grid-template-columns: minmax(0, 1.2fr) 360px;
+  grid-template-columns: minmax(0, 1fr) 340px;
 }
 
 .workspace-main {
   display: grid;
+  grid-auto-rows: min-content;
   gap: 0;
   min-width: 0;
 }
@@ -180,27 +170,26 @@ aside {
   display: grid;
   align-content: start;
   gap: 0;
-  padding: 20px;
+  padding: 10px 12px;
   border-left: 1px solid var(--line);
-  background:
-    linear-gradient(180deg, rgba(240, 242, 238, 0.95), rgba(251, 251, 249, 0.92));
+  background: var(--surface-2);
 }
 
 .filterbar {
-  padding: 16px 22px 18px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--line);
-  background: rgba(240, 242, 238, 0.85);
+  background: var(--surface-2);
 }
 
 .filter-form {
   display: grid;
-  gap: 12px;
-  grid-template-columns: 2fr repeat(3, minmax(120px, 1fr)) auto;
+  gap: 8px;
+  grid-template-columns: minmax(200px, 1fr) repeat(3, minmax(120px, 160px)) auto;
   align-items: end;
 }
 
 .filter-form-short {
-  grid-template-columns: minmax(0, 1.5fr) repeat(2, minmax(120px, 1fr)) auto;
+  grid-template-columns: minmax(200px, 1fr) repeat(2, minmax(120px, 160px)) auto;
 }
 
 @media (max-width: 1200px) {
@@ -214,9 +203,8 @@ aside {
     grid-template-rows: min-content min-content;
   }
 
-  .page-header,
   .workspace,
-  .workspace-dashboard {
+  .workspace-split {
     grid-template-columns: 1fr;
   }
 
@@ -228,36 +216,16 @@ aside {
 
 @media (max-width: 860px) {
   .app-shell {
-    width: min(100%, calc(100% - 14px));
-    margin: 7px auto 14px;
-  }
-
-  .page-header,
-  .filterbar,
-  .workspace-side {
-    padding-left: 14px;
-    padding-right: 14px;
-  }
-
-  .page-header {
-    gap: 18px;
-    padding-top: 18px;
-    padding-bottom: 18px;
-  }
-
-  .workspace-side {
-    padding-top: 16px;
-    padding-bottom: 16px;
+    padding: 10px;
   }
 
   .filter-form,
-  .filter-form-short,
-  .cols-2,
-  .summary-strip {
+  .filter-form-short {
     grid-template-columns: 1fr;
   }
 
-  .app-nav {
-    padding: 14px 12px 16px;
+  .page-header {
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 }

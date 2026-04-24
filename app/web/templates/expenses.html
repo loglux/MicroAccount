@@ -47,7 +47,7 @@
               <select name="category_code">
                 <option value="">All categories</option>
                 {% for category in categories %}
-                  <option value="{{ category }}" {% if filters.category_code == category %}selected{% endif %}>{{ category }}</option>
+                  <option value="{{ category }}" {% if filters.category_code == category %}selected{% endif %}>{{ category|humanize("category") }}</option>
                 {% endfor %}
               </select>
             </label>
@@ -96,7 +96,7 @@
                         <div class="muted">{{ expense.notes }}</div>
                       {% endif %}
                     </td>
-                    <td>{{ expense.category_code }}</td>
+                    <td>{{ expense.category_code|humanize("category") }}</td>
                     <td class="money">£{{ '%.2f'|format(expense.amount_gbp) }}</td>
                     <td class="cell-wrap">
                       {% if expense.attachments %}
@@ -105,8 +105,8 @@
                         </div>
                         {% for attachment in expense.attachments %}
                           <div class="doc-link">
-                            <span class="tag">{{ attachment.document_role }}</span>
-                            <span class="tag">{{ attachment.processing_status }}</span>
+                            <span class="tag">{{ attachment.document_role|humanize("document_role") }}</span>
+                            <span class="tag">{{ attachment.processing_status|humanize("processing_status") }}</span>
                             <a href="/{{ attachment.storage_path }}" target="_blank">{{ attachment.original_filename }}</a>
                           </div>
                         {% endfor %}
@@ -148,7 +148,7 @@
               Category
               <select name="category_code" required>
                 {% for category in categories %}
-                  <option value="{{ category }}" {% if form_defaults.category_code == category %}selected{% endif %}>{{ category }}{% if account_mappings.get(category) %} · {{ account_mappings.get(category) }}{% endif %}</option>
+                  <option value="{{ category }}" {% if form_defaults.category_code == category %}selected{% endif %}>{{ category|humanize("category") }}{% if account_mappings.get(category) %} · {{ account_mappings.get(category) }}{% endif %}</option>
                 {% endfor %}
               </select>
             </label>

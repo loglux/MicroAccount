@@ -7,8 +7,8 @@
     <header class="page-header">
       <div class="page-intro">
         <div class="eyebrow">Director's loan account</div>
-        <h1>DLA</h1>
-        <p>Record repayments and inspect the running balance the company owes back to the director.</p>
+        <h1>DLA ledger</h1>
+        <p>Track what the company owes the director and record repayments separately from expenses.</p>
       </div>
       <dl class="summary-strip">
         <div class="summary-item summary-item-primary">
@@ -39,7 +39,7 @@
 
         <section class="register-panel">
           <div class="panel-header">
-            <div><h3>Director's Loan Ledger</h3><p>Running balance of what the company owes back to the director.</p></div>
+            <div><h3>Director's loan ledger</h3><p>Every movement that changes what the company owes back to the director.</p></div>
             <div class="table-tools"><a href="/exports/director-loan.csv">DLA CSV</a></div>
           </div>
           <div class="ledger-table">
@@ -51,7 +51,7 @@
                 {% for row in loan_rows %}
                   <tr>
                     <td>{{ row.entry.entry_date.isoformat() }}</td>
-                    <td>{{ row.entry.direction }}</td>
+                    <td>{{ row.entry.direction|humanize("dla_direction") }}</td>
                     <td class="money">£{{ '%.2f'|format(row.entry.amount_gbp) }}</td>
                     <td class="money {% if row.running_balance < 0 %}money-negative{% endif %}">£{{ '%.2f'|format(row.running_balance) }}</td>
                     <td class="cell-wrap">{{ row.entry.reference }}</td>
@@ -67,10 +67,10 @@
       </section>
 
       <aside class="workspace-side">
-        <section class="inspector-section">
-          <div class="inspector-heading">
+        <section class="rail-section">
+          <div class="rail-heading">
             <h2>Repayment to director</h2>
-            <p>Record money returned by the company. This reduces the DLA balance instead of creating a new expense.</p>
+            <p>Record money returned by the company. This reduces the DLA balance but does not create a new expense.</p>
           </div>
           <form action="/repayments" method="post" class="repayment-form">
             <input type="hidden" name="redirect_to" value="/dla">
@@ -82,16 +82,11 @@
           </form>
         </section>
 
-        <section class="inspector-section">
-          <div class="inspector-heading">
-            <h2>Ledger rules</h2>
-            <p>Use the DLA ledger only for money moving between the director and the company.</p>
+        <section class="rail-section">
+          <div class="rail-heading">
+            <h2>Reading the balance</h2>
+            <p>Positive means the company owes the director. Negative means repayments exceeded recorded director funding and the ledger needs review.</p>
           </div>
-          <ul class="bullet-list">
-            <li>Personal payment for a company cost creates a <strong>loan to company</strong> entry.</li>
-            <li>Money paid back from the company creates a <strong>repayment to director</strong> entry.</li>
-            <li>The repayment itself is not another business expense.</li>
-          </ul>
         </section>
       </aside>
     </section>

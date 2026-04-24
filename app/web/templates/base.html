@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="/static/css/tokens.css">
   <link rel="stylesheet" href="/static/css/layout.css">
   <link rel="stylesheet" href="/static/css/components.css">
-  <link rel="stylesheet" href="/static/css/pages/dashboard.css">
   {% block head_extra %}{% endblock %}
 </head>
 <body class="page-{{ active_page or 'app' }}">
@@ -22,17 +21,13 @@
       </div>
 
       <nav class="topnav" aria-label="Primary">
-        <a href="/" {% if active_page == "dashboard" %}class="is-active"{% endif %}>
-          <span>Overview</span>
-          <small>Today</small>
-        </a>
         <a href="/expenses" {% if active_page == "expenses" %}class="is-active"{% endif %}>
           <span>Expenses</span>
-          <small>Main register</small>
+          <small>Home register</small>
         </a>
         <a href="/documents" {% if active_page == "documents" %}class="is-active"{% endif %}>
           <span>Documents</span>
-          <small>Review flow</small>
+          <small>Inbox and review</small>
         </a>
         <a href="/dla" {% if active_page == "dla" %}class="is-active"{% endif %}>
           <span>DLA</span>
