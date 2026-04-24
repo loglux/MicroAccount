@@ -67,9 +67,18 @@ The DLA screen must show:
 - current balance company owes director
 - running ledger entries
 
-### 5. Record income later
+### 5. Record income
 
-Income is not the dominant v1 workflow, but the product should leave a clean path for a simple future `IncomeRecord` register instead of locking the app into expense-only thinking.
+Income is tracked in a simple separate register through `IncomeRecord`. It stays deliberately minimal: one form, one table, no categories, no attachments, no document review. It is not a subtype of expense and does not touch the DLA ledger.
+
+Fields:
+
+- `income_date` required
+- `source_name` required
+- `description` required
+- `amount_gbp` required
+- `reference` optional
+- `notes` optional
 
 ## Data model
 
@@ -137,6 +146,19 @@ Income is not the dominant v1 workflow, but the product should leave a clean pat
 - `created_at`
 - `updated_at`
 
+### `income_records`
+
+- `id`
+- `income_date`
+- `source_name`
+- `description`
+- `amount_gbp`
+- `currency`
+- `reference` nullable
+- `notes` nullable
+- `created_at`
+- `updated_at`
+
 ## API surface
 
 ### Web routes
@@ -148,6 +170,8 @@ Income is not the dominant v1 workflow, but the product should leave a clean pat
 - `POST /documents/upload`
 - `GET /dla`
 - `POST /repayments`
+- `GET /income`
+- `POST /income`
 - `GET /exports/expenses.csv`
 - `GET /exports/director-loan.csv`
 - `GET /exports/backup.json`
@@ -169,7 +193,7 @@ The intended IA is:
 - `Expenses` as the main home workflow
 - `Documents` as a separate intake and review workspace
 - `DLA` as a focused money-ledger screen
-- `Income` later as a minimal separate register
+- `Income` as a minimal separate register
 
 Use plain language:
 

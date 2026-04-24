@@ -91,12 +91,13 @@ Expected layout:
 
 ### `/income`
 
-This screen will be added when revenue tracking is implemented.
+Simple separate register for money received by the company. Kept deliberately minimal: no categories, no attachments, no document-review workflow. It is not a subtype of expense.
 
 Purpose:
 
 - record incoming money
 - keep a simple revenue register
+- provide a running total without tying into the DLA balance
 
 Primary object:
 
@@ -104,7 +105,14 @@ Primary object:
 
 Primary action:
 
-- `Add income`
+- `Save income` (side-rail form)
+
+Expected layout:
+
+- ledger as the main surface
+- filter bar with search + date range
+- side rail with the record-income form
+- compact summary showing total received and record count
 
 ### `/settings`
 

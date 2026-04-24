@@ -39,6 +39,12 @@ from app.services.accounting import (
     list_incoming_documents,
     update_incoming_document_review,
 )
+from app.services.income import (
+    IncomeInput,
+    create_income,
+    get_income_summary,
+    list_income_records,
+)
 from app.services.labels import humanize
 
 router = APIRouter(tags=["web"])
@@ -298,6 +304,56 @@ async def create_expense_form(
         uploads=attachments,
     )
     return RedirectResponse(url=redirect_to, status_code=303)
+
+
+@router.get("/income")
+def income_page(
+    request: Request,
+    start_date: date | None = None,
+    end_date: date | None = None,
+    search_text: str | None = None,
+    db: Session = Depends(get_db),
+):
+    return templates.TemplateResponse(
+        request=request,
+        name="income.html",
+        context={
+            "request": request,
+            "app_name": settings.app_name,
+            "active_page": "income",
+            "income_records": list_income_records(db, start_date, end_date, search_text),
+            "income_summary": get_income_summary(db),
+            "filters": {
+                "start_date": start_date.isoformat() if start_date else "",
+                "end_date": end_date.isoformat() if end_date else "",
+                "search_text": search_text or "",
+            },
+        },
+    )
+
+
+@router.post("/income")
+async def create_income_form(
+    income_date: date = Form(...),
+    source_name: str = Form(...),
+    description: str = Form(...),
+    amount_gbp: Decimal = Form(...),
+    reference: str | None = Form(default=None),
+    notes: str | None = Form(default=None),
+    db: Session = Depends(get_db),
+):
+    create_income(
+        db,
+        IncomeInput(
+            income_date=income_date,
+            source_name=source_name,
+            description=description,
+            amount_gbp=amount_gbp,
+            reference=reference,
+            notes=notes,
+        ),
+    )
+    return RedirectResponse(url="/income", status_code=303)
 
 
 @router.post("/repayments")

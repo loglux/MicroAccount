@@ -331,11 +331,11 @@ This is an admin and rules screen, not a daily workflow.
 2. keep repayment entry simple
 3. improve clarity, not breadth
 
-### Stage 5: Income module
+### Stage 5: Income module (done)
 
-1. add `IncomeRecord` model
-2. add `/income`
-3. keep the feature deliberately minimal
+1. add `IncomeRecord` model — done
+2. add `/income` (GET + POST) — done
+3. keep the feature deliberately minimal — no attachments, no categories, no DLA coupling
 
 ### Stage 6: Settings and rules
 
