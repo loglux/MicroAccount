@@ -84,7 +84,7 @@
                     <td>{{ expense.expense_date.isoformat() }}</td>
                     <td>{{ expense.supplier_name or '' }}</td>
                     <td class="cell-wrap">
-                      <strong>{{ expense.description }}</strong>
+                      <strong><a href="/expenses/{{ expense.id }}">{{ expense.description }}</a></strong>
                       <div class="status-tags">
                         {% if expense.is_pre_trading %}<span class="tag">pre-trading</span>{% endif %}
                         {% if expense.incurred_before_incorporation %}<span class="tag">before incorporation</span>{% endif %}

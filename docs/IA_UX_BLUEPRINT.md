@@ -36,6 +36,33 @@ Expected layout:
 - large expense table as the primary workspace
 - narrow side rail for manual expense entry and short guidance
 - filters above the table
+- clicking the description opens `/expenses/{id}` for editing
+
+### `/expenses/{id}`
+
+Detail and edit view for a single expense. Clicked from the register by the expense description.
+
+Purpose:
+
+- edit any field on the expense (including the UK review flags)
+- see and manage attached evidence files
+- delete the expense when it was recorded by mistake
+
+Primary object:
+
+- `Expense`
+
+Primary action:
+
+- `Save changes`
+
+Secondary actions:
+
+- attach new evidence files (late upload)
+- remove an individual attachment
+- delete the whole expense
+
+Editing `amount_gbp` or `expense_date` must also update the linked `loan_to_company` DLA entry so the ledger stays consistent. Deleting the expense cascades to its attachments, attachment files on disk, and the linked DLA entry.
 
 ### `/documents`
 

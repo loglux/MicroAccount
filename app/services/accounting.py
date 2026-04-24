@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from pathlib import Path
 
 from fastapi import UploadFile
-from sqlalchemy import func, or_, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.config import settings
@@ -72,6 +72,21 @@ class RepaymentInput:
     entry_date: date
     amount_gbp: Decimal
     reference: str
+    notes: str | None = None
+
+
+@dataclass(slots=True)
+class ExpenseUpdateInput:
+    expense_date: date
+    supplier_name: str | None
+    description: str
+    amount_gbp: Decimal
+    category_code: str
+    is_pre_trading: bool = False
+    incurred_before_incorporation: bool = False
+    cost_treatment: str = "revenue"
+    use_type: str = "business_only"
+    business_use_percent: Decimal | None = None
     notes: str | None = None
 
 
@@ -631,3 +646,184 @@ def get_expense_prefill_from_primary_attachment(
     payload["attachment_id"] = str(primary_attachment.id)
     payload["document_role"] = primary_attachment.document_role
     return payload
+
+
+def get_expense(db: Session, expense_id: int) -> Expense | None:
+    return db.scalar(
+        select(Expense)
+        .options(
+            selectinload(Expense.attachments),
+            selectinload(Expense.loan_entries),
+        )
+        .where(Expense.id == expense_id)
+    )
+
+
+def update_expense(
+    db: Session,
+    expense_id: int,
+    payload: ExpenseUpdateInput,
+) -> Expense:
+    expense = db.get(Expense, expense_id)
+    if expense is None:
+        raise ValueError("Expense not found.")
+
+    normalized_business_use_percent = payload.business_use_percent
+    if normalized_business_use_percent is None:
+        normalized_business_use_percent = Decimal("100.00")
+
+    needs_review = any(
+        (
+            payload.incurred_before_incorporation,
+            payload.cost_treatment != "revenue",
+            payload.use_type != "business_only",
+            normalized_business_use_percent != Decimal("100.00"),
+        )
+    )
+
+    expense.expense_date = payload.expense_date
+    expense.supplier_name = payload.supplier_name or None
+    expense.description = payload.description.strip()
+    expense.amount_gbp = payload.amount_gbp
+    expense.category_code = payload.category_code
+    expense.is_pre_trading = payload.is_pre_trading
+    expense.incurred_before_incorporation = payload.incurred_before_incorporation
+    expense.cost_treatment = payload.cost_treatment
+    expense.use_type = payload.use_type
+    expense.business_use_percent = normalized_business_use_percent
+    expense.needs_review = needs_review
+    expense.is_business_use = payload.use_type == "business_only"
+    expense.status = "needs_review" if needs_review else "recorded"
+    expense.notes = payload.notes
+    expense.updated_at = datetime.now(UTC)
+
+    loan_entry = db.scalar(
+        select(DirectorLoanEntry)
+        .where(DirectorLoanEntry.expense_id == expense_id)
+        .where(DirectorLoanEntry.direction == DLA_LOAN_TO_COMPANY)
+        .order_by(DirectorLoanEntry.id.asc())
+    )
+    if loan_entry is not None:
+        loan_entry.amount_gbp = payload.amount_gbp
+        loan_entry.entry_date = payload.expense_date
+        loan_entry.reference = build_expense_loan_reference(expense_id, payload.description)
+
+    db.commit()
+    return db.scalar(
+        select(Expense)
+        .options(selectinload(Expense.attachments), selectinload(Expense.loan_entries))
+        .where(Expense.id == expense_id)
+    )
+
+
+def delete_expense(db: Session, expense_id: int) -> bool:
+    expense = db.get(Expense, expense_id)
+    if expense is None:
+        return False
+
+    attachments = list(
+        db.scalars(select(Attachment).where(Attachment.expense_id == expense_id)).all()
+    )
+    attachment_ids = [a.id for a in attachments]
+    attachment_paths = [a.storage_path for a in attachments]
+
+    if attachment_ids:
+        db.execute(
+            delete(DocumentExtraction).where(
+                DocumentExtraction.attachment_id.in_(attachment_ids)
+            )
+        )
+    db.execute(delete(Attachment).where(Attachment.expense_id == expense_id))
+    db.execute(delete(DirectorLoanEntry).where(DirectorLoanEntry.expense_id == expense_id))
+
+    for incoming in db.scalars(
+        select(IncomingDocument).where(IncomingDocument.linked_expense_id == expense_id)
+    ).all():
+        incoming.linked_expense_id = None
+
+    db.delete(expense)
+    db.commit()
+
+    for path in attachment_paths:
+        delete_stored_file(path)
+
+    return True
+
+
+def attach_uploads_to_expense(
+    db: Session,
+    expense_id: int,
+    uploads: list[UploadFile],
+) -> list[Attachment]:
+    expense = db.get(Expense, expense_id)
+    if expense is None:
+        raise ValueError("Expense not found.")
+
+    existing_attachment_count = int(
+        db.scalar(
+            select(func.count()).select_from(Attachment).where(Attachment.expense_id == expense_id)
+        )
+        or 0
+    )
+
+    attachments: list[Attachment] = []
+    for upload in uploads:
+        if not upload.filename:
+            continue
+        stored = store_upload(upload)
+        document_role = (
+            "primary_document" if existing_attachment_count == 0 else "supporting_document"
+        )
+        attachment = Attachment(
+            expense_id=expense_id,
+            original_filename=stored.original_filename,
+            stored_filename=stored.stored_filename,
+            mime_type=stored.mime_type,
+            file_size=stored.file_size,
+            sha256=stored.sha256,
+            storage_path=stored.storage_path,
+            document_role=document_role,
+            processing_status="queued",
+        )
+        db.add(attachment)
+        db.flush()
+        extraction_result = extract_document(build_processing_task(attachment))
+        attachment.processing_status = extraction_result.processing_status
+        attachment.processing_error = None
+        db.add(
+            DocumentExtraction(
+                attachment_id=attachment.id,
+                extractor_name="document_pipeline",
+                processing_status=extraction_result.processing_status,
+                document_type=extraction_result.document_type,
+                extracted_text=extraction_result.extracted_text,
+                supplier_guess=extraction_result.supplier_guess,
+                invoice_number_guess=extraction_result.invoice_number_guess,
+                invoice_date_guess=extraction_result.invoice_date_guess,
+                total_amount_guess=extraction_result.total_amount_guess,
+                currency_guess=extraction_result.currency_guess,
+                confidence_score=extraction_result.confidence_score,
+                parser_notes=extraction_result.parser_notes,
+            )
+        )
+        attachments.append(attachment)
+        existing_attachment_count += 1
+
+    db.commit()
+    for attachment in attachments:
+        db.refresh(attachment)
+    return attachments
+
+
+def remove_attachment(db: Session, attachment_id: int) -> bool:
+    attachment = db.get(Attachment, attachment_id)
+    if attachment is None:
+        return False
+    storage_path = attachment.storage_path
+    db.execute(
+        delete(DocumentExtraction).where(DocumentExtraction.attachment_id == attachment_id)
+    )
+    db.delete(attachment)
+    db.commit()
+    delete_stored_file(storage_path)
+    return True

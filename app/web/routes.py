@@ -24,11 +24,15 @@ from app.exports.csv import export_director_loan_csv, export_expenses_csv
 from app.exports.json_backup import export_backup_json
 from app.services.accounting import (
     ExpenseInput,
+    ExpenseUpdateInput,
     RepaymentInput,
+    attach_uploads_to_expense,
     create_expense,
     create_expense_from_incoming_document,
     create_repayment,
+    delete_expense,
     discard_incoming_document,
+    get_expense,
     get_expense_prefill_from_primary_attachment,
     get_incoming_document,
     get_summary,
@@ -37,6 +41,8 @@ from app.services.accounting import (
     list_director_loan_entries,
     list_expenses,
     list_incoming_documents,
+    remove_attachment,
+    update_expense,
     update_incoming_document_review,
 )
 from app.services.income import (
@@ -304,6 +310,97 @@ async def create_expense_form(
         uploads=attachments,
     )
     return RedirectResponse(url=redirect_to, status_code=303)
+
+
+@router.get("/expenses/{expense_id}")
+def expense_detail_page(
+    request: Request,
+    expense_id: int,
+    db: Session = Depends(get_db),
+):
+    expense = get_expense(db, expense_id)
+    if expense is None:
+        return RedirectResponse(url="/expenses", status_code=303)
+    return templates.TemplateResponse(
+        request=request,
+        name="expense_detail.html",
+        context={
+            "request": request,
+            "app_name": settings.app_name,
+            "active_page": "expenses",
+            "expense": expense,
+            "categories": list_categories(),
+            "account_mappings": {
+                mapping.category_code: f"{mapping.account_code} {mapping.account_name}"
+                for mapping in list_account_mappings(db)
+            },
+        },
+    )
+
+
+@router.post("/expenses/{expense_id}")
+async def update_expense_form(
+    expense_id: int,
+    expense_date: date = Form(...),
+    supplier_name: str | None = Form(default=None),
+    description: str = Form(...),
+    amount_gbp: Decimal = Form(...),
+    category_code: str = Form(...),
+    is_pre_trading: bool = Form(default=False),
+    incurred_before_incorporation: bool = Form(default=False),
+    cost_treatment: str = Form(default="revenue"),
+    use_type: str = Form(default="business_only"),
+    business_use_percent: Decimal | None = Form(default=None),
+    notes: str | None = Form(default=None),
+    db: Session = Depends(get_db),
+):
+    update_expense(
+        db,
+        expense_id,
+        ExpenseUpdateInput(
+            expense_date=expense_date,
+            supplier_name=supplier_name,
+            description=description,
+            amount_gbp=amount_gbp,
+            category_code=category_code,
+            is_pre_trading=is_pre_trading,
+            incurred_before_incorporation=incurred_before_incorporation,
+            cost_treatment=cost_treatment,
+            use_type=use_type,
+            business_use_percent=business_use_percent,
+            notes=notes,
+        ),
+    )
+    return RedirectResponse(url=f"/expenses/{expense_id}", status_code=303)
+
+
+@router.post("/expenses/{expense_id}/delete")
+async def delete_expense_form(
+    expense_id: int,
+    db: Session = Depends(get_db),
+):
+    delete_expense(db, expense_id)
+    return RedirectResponse(url="/expenses", status_code=303)
+
+
+@router.post("/expenses/{expense_id}/attachments")
+async def add_attachments_form(
+    expense_id: int,
+    attachments: list[UploadFile] = File(default=[]),
+    db: Session = Depends(get_db),
+):
+    attach_uploads_to_expense(db, expense_id, attachments)
+    return RedirectResponse(url=f"/expenses/{expense_id}", status_code=303)
+
+
+@router.post("/expenses/{expense_id}/attachments/{attachment_id}/delete")
+async def delete_attachment_form(
+    expense_id: int,
+    attachment_id: int,
+    db: Session = Depends(get_db),
+):
+    remove_attachment(db, attachment_id)
+    return RedirectResponse(url=f"/expenses/{expense_id}", status_code=303)
 
 
 @router.get("/income")

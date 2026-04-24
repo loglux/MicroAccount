@@ -168,6 +168,11 @@ Fields:
 - `POST /expenses`
 - `GET /documents`
 - `POST /documents/upload`
+- `GET /expenses/{expense_id}`
+- `POST /expenses/{expense_id}`
+- `POST /expenses/{expense_id}/delete`
+- `POST /expenses/{expense_id}/attachments`
+- `POST /expenses/{expense_id}/attachments/{attachment_id}/delete`
 - `GET /dla`
 - `POST /repayments`
 - `GET /income`

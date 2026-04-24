@@ -343,6 +343,23 @@ This is an admin and rules screen, not a daily workflow.
 2. add supplier-to-category mapping
 3. add account mapping management
 
+### Stage 7: Expense CRUD (edit, delete, attach later) — done except step 6
+
+1. `GET /expenses/{id}` detail page with editable form — done
+2. `POST /expenses/{id}` synchronises the linked `DirectorLoanEntry` when amount or date changes — done
+3. `POST /expenses/{id}/delete` cascades to attachments, their storage files, and the linked DLA entry — done
+4. `POST /expenses/{id}/attachments` for late attachment upload — done
+5. `POST /expenses/{id}/attachments/{attachment_id}/delete` — done
+6. remove the `Invoice files` field from the inline "Add expense" form on `/expenses` once late-attach is confirmed in use — pending
+
+### Stage 8: Export and import compatibility
+
+1. define a common internal export shape for expenses, DLA movements, and income that is easy to remap
+2. add targeted CSV exports matching Xero and QuickBooks Online expense import schemas
+3. add FreeAgent and Sage 50 variants where the mapping is straightforward
+4. add bank-statement import parsers (CSV per bank at first, OFX / ISO 20022 later) with deduplication by `sha256` and reference
+5. add a PDF accountant-handoff report (ledger summary, DLA statement) as a stable format that does not churn between versions
+
 ## Definition of done by stage
 
 ### Product reset done

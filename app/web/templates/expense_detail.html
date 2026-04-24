@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Expense · {{ app_name }}{% endblock %}
+
+{% block content %}
+  <main class="app-shell page-shell">
+    <header class="page-header">
+      <div class="page-intro">
+        <div class="eyebrow"><a href="/expenses">← Expense register</a></div>
+        <h1>{{ expense.description }}</h1>
+        <p>Edit any field and save. Changes to amount or date also update the linked DLA entry.</p>
+      </div>
+      <dl class="summary-strip">
+        <div class="summary-item">
+          <dt>Recorded</dt>
+          <dd>{{ expense.expense_date.isoformat() }}</dd>
+        </div>
+        <div class="summary-item summary-item-primary">
+          <dt>Amount</dt>
+          <dd class="money">£{{ '%.2f'|format(expense.amount_gbp) }}</dd>
+        </div>
+        <div class="summary-item">
+          <dt>Category</dt>
+          <dd>{{ expense.category_code|humanize("category") }}</dd>
+        </div>
+      </dl>
+    </header>
+
+    <section class="workspace workspace-split">
+      <section class="workspace-main">
+        <section class="register-panel">
+          <div class="panel-header">
+            <div>
+              <h3>Edit expense</h3>
+              <p>Supplier, description, amount, and category cover the essentials. UK review flags are below.</p>
+            </div>
+          </div>
+          <form action="/expenses/{{ expense.id }}" method="post" class="edit-expense-form">
+            <div class="cols-2">
+              <label>Date<input type="date" name="expense_date" value="{{ expense.expense_date.isoformat() }}" required></label>
+              <label>Amount GBP<input type="number" step="0.01" min="0.01" name="amount_gbp" value="{{ '%.2f'|format(expense.amount_gbp) }}" required></label>
+            </div>
+            <label>Category
+              <select name="category_code" required>
+                {% for category in categories %}
+                  <option value="{{ category }}" {% if expense.category_code == category %}selected{% endif %}>{{ category|humanize("category") }}{% if account_mappings.get(category) %} · {{ account_mappings.get(category) }}{% endif %}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <label>Supplier<input type="text" name="supplier_name" value="{{ expense.supplier_name or '' }}"></label>
+            <label>Description<input type="text" name="description" value="{{ expense.description }}" required></label>
+            <label>Notes<textarea name="notes">{{ expense.notes or '' }}</textarea></label>
+            <div class="flag-panel">
+              <div class="flag-panel-title">UK review</div>
+              <div class="cols-2">
+                <label class="checkbox"><input type="checkbox" name="is_pre_trading" value="true" {% if expense.is_pre_trading %}checked{% endif %}><span>Pre-trading</span></label>
+                <label class="checkbox"><input type="checkbox" name="incurred_before_incorporation" value="true" {% if expense.incurred_before_incorporation %}checked{% endif %}><span>Before incorporation</span></label>
+              </div>
+              <div class="cols-2">
+                <label>Cost treatment
+                  <select name="cost_treatment">
+                    <option value="revenue" {% if expense.cost_treatment == 'revenue' %}selected{% endif %}>Revenue</option>
+                    <option value="formation_or_capital" {% if expense.cost_treatment == 'formation_or_capital' %}selected{% endif %}>Formation or capital</option>
+                  </select>
+                </label>
+                <label>Use type
+                  <select name="use_type">
+                    <option value="business_only" {% if expense.use_type == 'business_only' %}selected{% endif %}>Business only</option>
+                    <option value="mixed_use" {% if expense.use_type == 'mixed_use' %}selected{% endif %}>Mixed use</option>
+                  </select>
+                </label>
+              </div>
+              <label>Business use %<input type="number" step="0.01" min="0" max="100" name="business_use_percent" value="{{ '%.2f'|format(expense.business_use_percent or 100) }}"></label>
+            </div>
+            <div class="button-row">
+              <button type="submit">Save changes</button>
+              <a class="button-link subtle" href="/expenses">Cancel</a>
+            </div>
+          </form>
+        </section>
+      </section>
+
+      <aside class="workspace-side">
+        <section class="rail-section">
+          <div class="rail-heading">
+            <h2>Attachments</h2>
+            <p>Evidence files for this expense. Primary document is used for prefill when viewing from the register.</p>
+          </div>
+          <div class="queue-list">
+            {% for attachment in expense.attachments %}
+              <div class="queue-item">
+                <strong><a href="/{{ attachment.storage_path }}" target="_blank">{{ attachment.original_filename }}</a></strong>
+                <div class="muted">
+                  <span class="tag">{{ attachment.document_role|humanize("document_role") }}</span>
+                  <span class="tag">{{ attachment.processing_status|humanize("processing_status") }}</span>
+                </div>
+                <div class="queue-item-actions">
+                  <form action="/expenses/{{ expense.id }}/attachments/{{ attachment.id }}/delete" method="post" class="inline-form">
+                    <button class="ghost danger" type="submit">Remove</button>
+                  </form>
+                </div>
+              </div>
+            {% else %}
+              <div class="empty">No attachments yet.</div>
+            {% endfor %}
+          </div>
+        </section>
+
+        <section class="rail-section">
+          <div class="rail-heading">
+            <h2>Attach files</h2>
+            <p>Add evidence now or later. Extracted text is stored but does not overwrite the fields above.</p>
+          </div>
+          <form action="/expenses/{{ expense.id }}/attachments" method="post" enctype="multipart/form-data" class="attach-form">
+            <label>Invoice or receipt<input type="file" name="attachments" multiple required></label>
+            <div class="button-row"><button type="submit">Upload</button></div>
+          </form>
+        </section>
+
+        <section class="rail-section">
+          <div class="rail-heading">
+            <h2>Delete expense</h2>
+            <p>Removes the record, its attachments, and the linked DLA entry. This cannot be undone.</p>
+          </div>
+          <form action="/expenses/{{ expense.id }}/delete" method="post" class="inline-form" onsubmit="return confirm('Delete this expense and its linked DLA entry?');">
+            <div class="button-row"><button class="ghost danger" type="submit">Delete expense</button></div>
+          </form>
+        </section>
+      </aside>
+    </section>
+  </main>
+{% endblock %}
