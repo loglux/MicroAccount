@@ -150,6 +150,8 @@ The repository standardises these workflows:
 - `make docker-up`
 - `make docker-down`
 
+The standard development loop (read docs → change → update tests and docs → `make check` → rebuild Docker for runtime/UI changes) is described in `docs/TOOLING.md`.
+
 ## Documentation map
 
 - `AGENTS.md`: working rules for contributors and AI agents

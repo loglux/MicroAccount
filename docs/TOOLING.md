@@ -25,6 +25,18 @@ We standardise the developer workflow through:
 - run all checks in one command
 - build and run the Docker service
 
+## Standard development loop
+
+For normal work on the repository, use this order:
+
+1. read the relevant docs for the area being changed
+2. identify the primary object and primary user action of the workflow
+3. make the code or UI change
+4. update tests when behaviour changes
+5. update docs when behaviour or structure changes
+6. run `make check`
+7. if the change affects runtime behaviour or UI, rebuild and restart Docker
+
 ## Quality baseline
 
 ### Formatting
@@ -39,7 +51,7 @@ Use `ruff check`.
 
 Use `pytest`.
 
-Testing layers to add:
+Testing layers:
 
 - unit tests for domain rules
 - service tests for expense and repayment workflows
@@ -75,3 +87,53 @@ The highest-value regression scenarios are:
 - pre-trading flag persists correctly
 - exports include expected records and fields
 - attachment metadata is preserved
+
+## Before changing UI
+
+Before making a meaningful UI change, confirm:
+
+- which screen is being changed
+- what the primary object on that screen is
+- what the primary action on that screen is
+- whether the screen belongs to `Expenses`, `Documents`, `DLA`, or later `Income`
+- whether the change improves workflow clarity or only adds chrome
+
+UI changes should be rejected if they:
+
+- make the primary workflow less obvious
+- add equal visual weight to unrelated areas
+- turn the app into a dashboard-card composition
+- duplicate the same create flow across multiple screens without a clear reason
+- blur `document`, `expense`, and `ledger entry` responsibilities
+
+## Before changing workflow or data model
+
+Before changing behaviour or model shape, check:
+
+- `docs/PRODUCT_CONCEPT.md`
+- `docs/IA_UX_BLUEPRINT.md`
+- `docs/V1_BLUEPRINT.md`
+- `docs/UK_RULES.md`
+
+If the intended change contradicts those docs, update the docs in the same change.
+
+## Pre-commit checklist
+
+Before creating a commit, confirm:
+
+- tests relevant to the change were added or updated if needed
+- `make check` passes
+- changed docs are updated
+- no local company data or uploaded documents are being committed
+- no temporary debugging code remains
+- naming still matches the domain language of the project
+
+## Docker verification
+
+When a change affects web routes, templates, CSS, JS, runtime config, or startup behaviour:
+
+- run `make docker-build`
+- run `make docker-up`
+- verify the affected pages or endpoints respond correctly
+
+Container verification is not optional for UI and runtime-facing changes.
